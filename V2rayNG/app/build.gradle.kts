@@ -18,13 +18,10 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // Enable ABI splits for smaller APKs per architecture
+    // Universal release APK, no ABI splits
     splits {
         abi {
-            isEnable = true
-            reset()
-            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
-            isUniversalApk = false   // We want architecture-specific APKs
+            isEnable = false    // Disable ABI splits for universal APK
         }
     }
 
@@ -39,7 +36,7 @@ android {
             signingConfig = signingConfigs.getByName("release")
         }
         debug {
-            isMinifyEnabled = false
+            isMinifyEnabled = false          // Debug remains readable
             shrinkResources = false
         }
     }
@@ -57,25 +54,15 @@ android {
         }
     }
 
-    // APK naming and version code for each ABI
+    // APK naming and version code for universal release
     applicationVariants.all {
         val variant = this
-        val isFdroid = variant.productFlavors.any { it.name == "fdroid" }
-        val versionCodesMap = if (isFdroid) {
-            mapOf("armeabi-v7a" to 2, "arm64-v8a" to 1, "x86" to 4, "x86_64" to 3)
-        } else {
-            mapOf("armeabi-v7a" to 4, "arm64-v8a" to 4, "x86" to 4, "x86_64" to 4)
-        }
-
         variant.outputs
             .map { it as com.android.build.gradle.internal.api.ApkVariantOutputImpl }
             .forEach { output ->
-                val abi = output.getFilter("ABI") ?: "universal"
                 val flavorName = variant.productFlavors.joinToString("_") { it.name }
-                output.outputFileName = "v2rayNG_${variant.versionName}_${flavorName}_${abi}.apk"
-                if (versionCodesMap.containsKey(abi)) {
-                    output.versionCodeOverride = (1000000 * versionCodesMap[abi]!! + variant.versionCode)
-                }
+                output.outputFileName = "v2rayNG_${variant.versionName}_${flavorName}.apk"
+                output.versionCodeOverride = variant.versionCode
             }
     }
 
