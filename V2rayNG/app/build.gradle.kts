@@ -38,10 +38,10 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    buildTypes {
+   buildTypes {
         release {
             isMinifyEnabled = true       // Enable code shrinking and obfuscation
-            shrinkResources = true       // Remove unused resources to reduce APK size
+            isshrinkResources = true       // Remove unused resources to reduce APK size
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -52,7 +52,6 @@ android {
         debug {
             isMinifyEnabled = false      // Disable code shrinking for debug builds
         }
-
     flavorDimensions.add("distribution")
     productFlavors {
         create("fdroid") {
@@ -78,9 +77,9 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
-    }
+    compilerOptions {
+    jvmTarget.set(JavaVersion.VERSION_17)
+}
 
     applicationVariants.all {
         val variant = this
