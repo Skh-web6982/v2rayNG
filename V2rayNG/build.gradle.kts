@@ -1,12 +1,24 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
 plugins {
-    // Android Gradle Plugin 8.12 for all modules
-    id("com.android.application") version "8.12.0" apply false
-    // Kotlin Android Plugin
-    id("org.jetbrains.kotlin.android") version "2.1.20" apply false
-    // License plugin (optional)
-    id("com.jaredsburrows.license") version "0.9.0" apply false
+    // Do not apply here, just declare
+    alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.android.library) apply false
+    alias(libs.plugins.kotlin.android) apply false
 }
 
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        // License plugin classpath
+        classpath(libs.gradle.license.plugin)
+    }
+}
+
+// Configure plugin repositories for all projects
 pluginManagement {
     repositories {
         gradlePluginPortal()
@@ -15,6 +27,7 @@ pluginManagement {
     }
 }
 
+// Dependency resolution for all projects
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
