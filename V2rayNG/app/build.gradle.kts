@@ -79,8 +79,7 @@ android {
     }
 
     kotlin {
-        jvmToolchain(17)
-    }
+        jvmToolchain(17)    
 }
     applicationVariants.all {
         val variant = this
