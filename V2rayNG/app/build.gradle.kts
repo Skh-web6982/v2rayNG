@@ -47,6 +47,8 @@ android {
                 "proguard-rules.pro"
             )
         }
+    }
+
         debug {
             isMinifyEnabled = false      // Disable code shrinking for debug builds
         }
