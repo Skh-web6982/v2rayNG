@@ -17,21 +17,3 @@ buildscript {
         classpath(libs.gradle.license.plugin)
     }
 }
-
-// Configure plugin repositories for all projects
-pluginManagement {
-    repositories {
-        gradlePluginPortal()
-        google()
-        mavenCentral()
-    }
-}
-
-// Dependency resolution for all projects
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
