@@ -8,9 +8,6 @@ plugins {
 }
 
 buildscript {
-    repositories {
-        google()
-        mavenCentral()
     }
     dependencies {
         // License plugin classpath
