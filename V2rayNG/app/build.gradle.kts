@@ -1,9 +1,5 @@
-// Root project name
 rootProject.name = "V2rayNG"
-
-// Include app module
 include(":app")
-
 plugins {
     // Apply Android Application plugin
     id("com.android.application")
