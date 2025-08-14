@@ -1,6 +1,10 @@
 plugins {
-    id 'com.android.application' version '8.12.0' apply false
-    id 'org.jetbrains.kotlin.android' version '2.1.20' apply false
+    // Apply Android Application plugin
+    id("com.android.application")
+    // Apply Kotlin Android plugin
+    id("org.jetbrains.kotlin.android")
+    // Optional license plugin
+    id("com.jaredsburrows.license")
 }
 
 android {
@@ -14,35 +18,43 @@ android {
         versionCode = 668
         versionName = "1.10.18"
         multiDexEnabled = true
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
 
-    splits {
-        abi {
-            isEnable = true
-            reset()
-            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
-            isUniversalApk = false
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // ABI splits configuration
+        val abiFilterList = (properties["ABI_FILTERS"] as? String)?.split(';')
+        splits {
+            abi {
+                isEnable = true
+                reset()
+                if (!abiFilterList.isNullOrEmpty()) {
+                    include(*abiFilterList.toTypedArray())
+                } else {
+                    include("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
+                }
+                isUniversalApk = abiFilterList.isNullOrEmpty()
+            }
         }
     }
 
     buildTypes {
         release {
+            // Enable code shrinking and obfuscation
             isMinifyEnabled = true
             shrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
         }
         debug {
+            // Disable shrinking in debug
             isMinifyEnabled = false
-            shrinkResources = false
         }
     }
 
-    flavorDimensions.add("distribution")
+    // Product flavors for different distributions
+    flavorDimensions += "distribution"
     productFlavors {
         create("fdroid") {
             dimension = "distribution"
@@ -55,29 +67,10 @@ android {
         }
     }
 
-    applicationVariants.all {
-        val variant = this
-        val versionCodes = mapOf(
-            "armeabi-v7a" to 1,
-            "arm64-v8a" to 2,
-            "x86" to 3,
-            "x86_64" to 4,
-            "universal" to 0
-        )
-        variant.outputs
-            .map { it as com.android.build.gradle.internal.api.ApkVariantOutputImpl }
-            .forEach { output ->
-                val abi = output.getFilter("ABI") ?: "universal"
-                val flavorName = variant.productFlavors.joinToString("_") { it.name }
-                output.outputFileName = "v2rayNG_${variant.versionName}_${flavorName}_${abi}.apk"
-                output.versionCodeOverride =
-                    (variant.versionCode * 10) + (versionCodes[abi] ?: 0)
-            }
-    }
-
-    buildFeatures {
-        viewBinding = true
-        buildConfig = true
+    sourceSets {
+        getByName("main") {
+            jniLibs.srcDirs("libs")
+        }
     }
 
     compileOptions {
@@ -89,12 +82,58 @@ android {
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
+
+    // Customize APK file names per flavor and ABI
+    applicationVariants.all {
+        val variant = this
+        val isFdroid = variant.productFlavors.any { it.name == "fdroid" }
+
+        if (isFdroid) {
+            val versionCodes = mapOf(
+                "armeabi-v7a" to 2, "arm64-v8a" to 1, "x86" to 4, "x86_64" to 3, "universal" to 0
+            )
+
+            variant.outputs
+                .map { it as com.android.build.gradle.internal.api.ApkVariantOutputImpl }
+                .forEach { output ->
+                    val abi = output.getFilter("ABI") ?: "universal"
+                    output.outputFileName = "v2rayNG_${variant.versionName}-fdroid_${abi}.apk"
+                    output.versionCodeOverride =
+                        versionCodes[abi]?.let { (100 * variant.versionCode + it) + 5000000 } ?: variant.versionCode
+                }
+        } else {
+            val versionCodes = mapOf(
+                "armeabi-v7a" to 4, "arm64-v8a" to 4, "x86" to 4, "x86_64" to 4, "universal" to 4
+            )
+
+            variant.outputs
+                .map { it as com.android.build.gradle.internal.api.ApkVariantOutputImpl }
+                .forEach { output ->
+                    val abi = output.getFilter("ABI") ?: "universal"
+                    output.outputFileName = "v2rayNG_${variant.versionName}_${abi}.apk"
+                    output.versionCodeOverride =
+                        versionCodes[abi]?.let { (1000000 * it) + variant.versionCode } ?: variant.versionCode
+                }
+        }
+    }
+
+    buildFeatures {
+        viewBinding = true
+        buildConfig = true
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
 }
 
 dependencies {
+    // Core libraries
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar", "*.jar"))))
 
-    // AndroidX Core
+    // AndroidX core and UI
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.activity)
@@ -102,18 +141,16 @@ dependencies {
     implementation(libs.preference.ktx)
     implementation(libs.recyclerview)
     implementation(libs.androidx.swiperefreshlayout)
-
-    // UI
     implementation(libs.material)
     implementation(libs.toasty)
     implementation(libs.editorkit)
     implementation(libs.flexbox)
 
-    // Data & Storage
+    // Data and storage
     implementation(libs.mmkv.static)
     implementation(libs.gson)
 
-    // Reactive
+    // Kotlin Coroutines
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.core)
 
@@ -144,6 +181,6 @@ dependencies {
     testImplementation(libs.org.mockito.mockito.inline)
     testImplementation(libs.mockito.kotlin)
 
-    // Desugar Java 8+ features
+    // Desugar for Java 17 features
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 }
