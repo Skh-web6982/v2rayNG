@@ -8,7 +8,6 @@ plugins {
 }
 
 buildscript {
-    }
     dependencies {
         // License plugin classpath
         classpath(libs.gradle.license.plugin)
