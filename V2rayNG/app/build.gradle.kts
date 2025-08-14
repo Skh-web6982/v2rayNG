@@ -24,7 +24,12 @@ android {
                 if (abiFilterList != null && abiFilterList.isNotEmpty()) {
                     include(*abiFilterList.toTypedArray())
                 } else {
-                    include("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
+                    include(
+                        "arm64-v8a",
+                        "armeabi-v7a",
+                        "x86_64",
+                        "x86"
+                    )
                 }
                 isUniversalApk = abiFilterList.isNullOrEmpty()
             }
@@ -35,17 +40,15 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true            // Enable code shrinking
-            shrinkResources = true            // Remove unused resources
+            isMinifyEnabled = true       // Enable code shrinking and obfuscation
+            shrinkResources = true       // Remove unused resources to reduce APK size
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release") // Make sure release signing is set
         }
         debug {
-            isMinifyEnabled = false           // Keep debug readable
-            shrinkResources = false
+            isMinifyEnabled = false      // Disable code shrinking for debug builds
         }
     }
 
@@ -78,39 +81,49 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
-    // Rename APKs and override version codes based on flavor and ABI
+    // Rename APKs and override version codes per flavor and ABI
     applicationVariants.all {
         val variant = this
         val isFdroid = variant.productFlavors.any { it.name == "fdroid" }
-        val versionCodesFdroid =
-            mapOf("armeabi-v7a" to 2, "arm64-v8a" to 1, "x86" to 4, "x86_64" to 3, "universal" to 0)
-        val versionCodesPlay =
-            mapOf("armeabi-v7a" to 4, "arm64-v8a" to 4, "x86" to 4, "x86_64" to 4, "universal" to 4)
+        if (isFdroid) {
+            val versionCodes =
+                mapOf("armeabi-v7a" to 2, "arm64-v8a" to 1, "x86" to 4, "x86_64" to 3, "universal" to 0)
 
-        variant.outputs
-            .map { it as com.android.build.gradle.internal.api.ApkVariantOutputImpl }
-            .forEach { output ->
-                val abi = output.getFilter("ABI") ?: "universal"
-                if (isFdroid) {
+            variant.outputs
+                .map { it as com.android.build.gradle.internal.api.ApkVariantOutputImpl }
+                .forEach { output ->
+                    val abi = output.getFilter("ABI") ?: "universal"
                     output.outputFileName = "v2rayNG_${variant.versionName}-fdroid_${abi}.apk"
-                    output.versionCodeOverride =
-                        (100 * variant.versionCode + (versionCodesFdroid[abi] ?: 0)) + 5000000
-                } else {
-                    output.outputFileName = "v2rayNG_${variant.versionName}_${abi}.apk"
-                    output.versionCodeOverride =
-                        (1000000 * (versionCodesPlay[abi] ?: 0)) + variant.versionCode
+                    if (versionCodes.containsKey(abi)) {
+                        output.versionCodeOverride =
+                            (100 * variant.versionCode + versionCodes[abi]!!).plus(5000000)
+                    }
                 }
-            }
+        } else {
+            val versionCodes =
+                mapOf("armeabi-v7a" to 4, "arm64-v8a" to 4, "x86" to 4, "x86_64" to 4, "universal" to 4)
+
+            variant.outputs
+                .map { it as com.android.build.gradle.internal.api.ApkVariantOutputImpl }
+                .forEach { output ->
+                    val abi = output.getFilter("ABI") ?: "universal"
+                    output.outputFileName = "v2rayNG_${variant.versionName}_${abi}.apk"
+                    if (versionCodes.containsKey(abi)) {
+                        output.versionCodeOverride =
+                            (1000000 * versionCodes[abi]!!).plus(variant.versionCode)
+                    }
+                }
+        }
     }
 
     buildFeatures {
-        viewBinding = true       // Enable ViewBinding
-        buildConfig = true       // Enable BuildConfig generation
+        viewBinding = true    // Enable ViewBinding
+        buildConfig = true    // Enable BuildConfig generation
     }
 
     packaging {
         jniLibs {
-            useLegacyPackaging = true   // Maintain legacy JNI packaging
+            useLegacyPackaging = true // Maintain legacy JNI packaging for compatibility
         }
     }
 }
@@ -169,6 +182,5 @@ dependencies {
     testImplementation(libs.org.mockito.mockito.inline)
     testImplementation(libs.mockito.kotlin)
 
-    // Desugar Java 8+ features
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 }
