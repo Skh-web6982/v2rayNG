@@ -1,11 +1,6 @@
-rootProject.name = "V2rayNG"
-include(":app")
 plugins {
-    // Apply Android Application plugin
     id("com.android.application")
-    // Apply Kotlin Android plugin
     id("org.jetbrains.kotlin.android")
-    // Optional license plugin
     id("com.jaredsburrows.license")
 }
 
@@ -23,25 +18,18 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // ABI splits configuration
-        val abiFilterList = (properties["ABI_FILTERS"] as? String)?.split(';')
         splits {
             abi {
                 isEnable = true
                 reset()
-                if (!abiFilterList.isNullOrEmpty()) {
-                    include(*abiFilterList.toTypedArray())
-                } else {
-                    include("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
-                }
-                isUniversalApk = abiFilterList.isNullOrEmpty()
+                include("armeabi-v7a", "arm64-v8a", "x86_64", "x86")
+                isUniversalApk = true
             }
         }
     }
 
     buildTypes {
         release {
-            // Enable code shrinking and obfuscation
             isMinifyEnabled = true
             shrinkResources = true
             proguardFiles(
@@ -50,12 +38,10 @@ android {
             )
         }
         debug {
-            // Disable shrinking in debug
             isMinifyEnabled = false
         }
     }
 
-    // Product flavors for different distributions
     flavorDimensions += "distribution"
     productFlavors {
         create("fdroid") {
@@ -69,12 +55,6 @@ android {
         }
     }
 
-    sourceSets {
-        getByName("main") {
-            jniLibs.srcDirs("libs")
-        }
-    }
-
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
@@ -83,40 +63,6 @@ android {
 
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_17.toString()
-    }
-
-    // Customize APK file names per flavor and ABI
-    applicationVariants.all {
-        val variant = this
-        val isFdroid = variant.productFlavors.any { it.name == "fdroid" }
-
-        if (isFdroid) {
-            val versionCodes = mapOf(
-                "armeabi-v7a" to 2, "arm64-v8a" to 1, "x86" to 4, "x86_64" to 3, "universal" to 0
-            )
-
-            variant.outputs
-                .map { it as com.android.build.gradle.internal.api.ApkVariantOutputImpl }
-                .forEach { output ->
-                    val abi = output.getFilter("ABI") ?: "universal"
-                    output.outputFileName = "v2rayNG_${variant.versionName}-fdroid_${abi}.apk"
-                    output.versionCodeOverride =
-                        versionCodes[abi]?.let { (100 * variant.versionCode + it) + 5000000 } ?: variant.versionCode
-                }
-        } else {
-            val versionCodes = mapOf(
-                "armeabi-v7a" to 4, "arm64-v8a" to 4, "x86" to 4, "x86_64" to 4, "universal" to 4
-            )
-
-            variant.outputs
-                .map { it as com.android.build.gradle.internal.api.ApkVariantOutputImpl }
-                .forEach { output ->
-                    val abi = output.getFilter("ABI") ?: "universal"
-                    output.outputFileName = "v2rayNG_${variant.versionName}_${abi}.apk"
-                    output.versionCodeOverride =
-                        versionCodes[abi]?.let { (1000000 * it) + variant.versionCode } ?: variant.versionCode
-                }
-        }
     }
 
     buildFeatures {
@@ -132,57 +78,44 @@ android {
 }
 
 dependencies {
-    // Core libraries
-    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar", "*.jar"))))
+    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar","*.jar"))))
 
-    // AndroidX core and UI
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.activity)
-    implementation(libs.androidx.constraintlayout)
-    implementation(libs.preference.ktx)
-    implementation(libs.recyclerview)
-    implementation(libs.androidx.swiperefreshlayout)
-    implementation(libs.material)
-    implementation(libs.toasty)
-    implementation(libs.editorkit)
-    implementation(libs.flexbox)
+    // AndroidX
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.3.0")
+    implementation("androidx.recyclerview:recyclerview:1.6.0")
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.2.0")
 
-    // Data and storage
-    implementation(libs.mmkv.static)
-    implementation(libs.gson)
+    // Material Design
+    implementation("com.google.android.material:material:1.12.0")
 
     // Kotlin Coroutines
-    implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.kotlinx.coroutines.core)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
-    // Language processing
-    implementation(libs.language.base)
-    implementation(libs.language.json)
+    // MMKV for storage
+    implementation("com.tencent:mmkv-static:1.2.16")
 
-    // Utilities
-    implementation(libs.quickie.foss)
-    implementation(libs.core)
+    // Gson for JSON
+    implementation("com.google.code.gson:gson:2.10.1")
 
     // Lifecycle
-    implementation(libs.lifecycle.viewmodel.ktx)
-    implementation(libs.lifecycle.livedata.ktx)
-    implementation(libs.lifecycle.runtime.ktx)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.3")
+    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.6.3")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.3")
 
-    // Background tasks
-    implementation(libs.work.runtime.ktx)
-    implementation(libs.work.multiprocess)
+    // WorkManager
+    implementation("androidx.work:work-runtime-ktx:2.9.3")
 
     // Multidex
-    implementation(libs.multidex)
+    implementation("androidx.multidex:multidex:2.0.1")
+
+    // Core Library Desugaring
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
 
     // Testing
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    testImplementation(libs.org.mockito.mockito.inline)
-    testImplementation(libs.mockito.kotlin)
-
-    // Desugar for Java 17 features
-    coreLibraryDesugaring(libs.desugar.jdk.libs)
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.6")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.2")
 }
