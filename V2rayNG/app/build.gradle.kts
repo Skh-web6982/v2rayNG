@@ -38,7 +38,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-       buildTypes {
+    buildTypes {
         getByName("release") {
             isMinifyEnabled = true       // Enable code shrinking and obfuscation
             isShrinkResources = true     // Remove unused resources to reduce APK size
